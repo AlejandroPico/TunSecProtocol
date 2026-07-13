@@ -37,7 +37,8 @@ Ningún protocolo pasa de `catalog-only` a `guided` sin estas cuatro evidencias:
 
 - Glòries tiene guiados 200-TRA, 240-TRA, 250-TRA y 400-FOC.
 - La B-20 tiene sus 21 códigos catalogados y 250-TRA guiado, con variantes por túnel únicamente donde constan en la fuente.
-- La B-10 se muestra mediante fichas individuales, pero permanece bloqueada hasta transcribir y validar sus protocolos.
+- La B-10 contiene 29 códigos para Diagonal Mar, Poble Nou, Vila Olímpica, Pla de Palau y Colom; Baró de Viver y Bon Pastor contienen los 23 códigos que figuran en su bloque documental. El 250-TRA está guiado con variantes por túnel.
+- Camèlies y Lesseps contienen 27 códigos cada uno y el 250-TRA guiado. Los demás urbanos siguen bloqueados hasta completar su transcripción y validación.
 - No se realizan llamadas, notificaciones, maniobras SCADA ni acciones sobre señalización.
 - La bitácora local no sustituye el registro oficial de incidencias.
 - Los teléfonos y datos personales de los PDF no se publican en GitHub Pages.

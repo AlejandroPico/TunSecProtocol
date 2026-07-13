@@ -9,6 +9,7 @@ La base `tunsec-protocol.sqlite` es la fuente estructurada que consume la web. S
 | `sources` | Inventario documental, edición, fecha, páginas, SHA-256 y estado de validación. |
 | `tunnels` | Infraestructura, corredor, sentidos, documento y catálogo compartido aplicable. |
 | `protocols` | Código, título, nivel, categoría, cobertura y páginas de origen. |
+| `protocol_citations` | Paginación exacta por túnel cuando varios túneles comparten catálogo. |
 | `decision_nodes` | Preguntas y terminales de cada diagrama de decisión. |
 | `decision_options` | Respuestas, siguiente nodo y rama de acciones que activan. |
 | `actions` | Secuencia operativa, criticidad y cita de página. |
@@ -25,7 +26,7 @@ La base `tunsec-protocol.sqlite` es la fuente estructurada que consume la web. S
 
 ## Compilación
 
-`scripts/build_database.py` crea una base nueva en cada compilación, activa claves foráneas, aplica `schema.sql` y `seed.sql`, y ejecuta `PRAGMA integrity_check`.
+`scripts/build_database.py` crea una base nueva en cada compilación, activa claves foráneas, aplica los SQL del esquema y los catálogos, y ejecuta `PRAGMA integrity_check`.
 
 `scripts/validate_database.py` comprueba:
 

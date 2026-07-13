@@ -11,7 +11,8 @@ export interface TunSecLaunchContext {
 export interface TunSecBridgeEvent {
   source: 'TunSecProtocol';
   schemaVersion: 1;
-  type: 'TUNSEC_PROTOCOL_SESSION_STARTED' | 'TUNSEC_PROTOCOL_SELECTED' | 'TUNSEC_PROTOCOL_ACTION_UPDATED';
+  type: 'TUNSEC_PROTOCOL_SESSION_STARTED' | 'TUNSEC_PROTOCOL_SELECTED' | 'TUNSEC_PROTOCOL_ACTION_UPDATED' |
+    'TUNSEC_PROTOCOL_NOTIFICATION_UPDATED' | 'TUNSEC_PROTOCOL_SESSION_CLOSED';
   emittedAt: string;
   context: {
     sessionId: string;
@@ -20,6 +21,9 @@ export interface TunSecBridgeEvent {
     direction: string;
     protocolCode?: string;
     completedActionIds?: string[];
+    completedNotificationIds?: string[];
+    notificationTargets?: string[];
+    status?: 'OPEN' | 'RESOLVED' | 'CLOSED';
   };
 }
 

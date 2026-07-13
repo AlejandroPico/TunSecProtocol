@@ -84,8 +84,11 @@ export function getTunnels(): TunnelRecord[] {
   }));
 }
 
-export function getProtocols(protocolCatalogId: string): ProtocolRecord[] {
-  return rows('SELECT * FROM protocols WHERE tunnel_id = ? ORDER BY severity, code', [protocolCatalogId]).map(mapProtocol);
+export function getProtocols(protocolCatalogId: string, tunnelId?: string): ProtocolRecord[] {
+  return rows(`SELECT p.*, COALESCE(c.source_id,p.source_id) source_id,
+    COALESCE(c.pdf_pages,p.pdf_pages) pdf_pages, COALESCE(c.printed_pages,p.printed_pages) printed_pages
+    FROM protocols p LEFT JOIN protocol_citations c ON c.protocol_id=p.id AND c.tunnel_id=?
+    WHERE p.tunnel_id = ? ORDER BY p.severity, p.code`, [tunnelId ?? '', protocolCatalogId]).map(mapProtocol);
 }
 
 export function getSource(sourceId: string): SourceRecord {
@@ -94,8 +97,10 @@ export function getSource(sourceId: string): SourceRecord {
   return mapSource(source);
 }
 
-export function getProtocolBundle(protocolId: string): ProtocolBundle {
-  const protocolRow = rows('SELECT * FROM protocols WHERE id = ?', [protocolId])[0];
+export function getProtocolBundle(protocolId: string, tunnelId?: string): ProtocolBundle {
+  const protocolRow = rows(`SELECT p.*, COALESCE(c.source_id,p.source_id) source_id,
+    COALESCE(c.pdf_pages,p.pdf_pages) pdf_pages, COALESCE(c.printed_pages,p.printed_pages) printed_pages
+    FROM protocols p LEFT JOIN protocol_citations c ON c.protocol_id=p.id AND c.tunnel_id=? WHERE p.id=?`, [tunnelId ?? '', protocolId])[0];
   if (!protocolRow) throw new Error(`Protocolo no encontrado: ${protocolId}`);
   const protocol = mapProtocol(protocolRow);
   const nodes: DecisionNode[] = rows('SELECT * FROM decision_nodes WHERE protocol_id = ?', [protocolId]).map((row) => ({
@@ -110,12 +115,12 @@ export function getProtocolBundle(protocolId: string): ProtocolBundle {
   const actions: ActionRecord[] = rows('SELECT * FROM actions WHERE protocol_id = ? ORDER BY sort_order, id', [protocolId]).map((row) => ({
     id: text(row.id), protocolId: text(row.protocol_id), branchKey: text(row.branch_key), phase: text(row.phase),
     sortOrder: number(row.sort_order), actionType: text(row.action_type), instructionEs: text(row.instruction_es),
-    criticality: text(row.criticality) as ActionRecord['criticality'], sourcePage: number(row.source_page), printedPage: number(row.printed_page)
+    criticality: text(row.criticality) as ActionRecord['criticality'], sourcePage: number(row.source_page), printedPage: text(row.printed_page)
   }));
   const notifications: NotificationRecord[] = rows('SELECT * FROM notifications WHERE protocol_id = ? ORDER BY id', [protocolId]).map((row) => ({
     id: text(row.id), protocolId: text(row.protocol_id), branchKey: text(row.branch_key), target: text(row.target),
     conditionEs: text(row.condition_es), mandatoryState: text(row.mandatory_state) as NotificationRecord['mandatoryState'],
-    sourcePage: number(row.source_page), printedPage: number(row.printed_page)
+    sourcePage: number(row.source_page), printedPage: text(row.printed_page)
   }));
   return { protocol, source: getSource(protocol.sourceId), nodes, options, actions, notifications };
 }

@@ -54,6 +54,18 @@ CREATE TABLE decision_nodes (
   FOREIGN KEY (protocol_id) REFERENCES protocols(id)
 );
 
+CREATE TABLE protocol_citations (
+  tunnel_id TEXT NOT NULL,
+  protocol_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  pdf_pages TEXT NOT NULL,
+  printed_pages TEXT NOT NULL,
+  PRIMARY KEY (tunnel_id, protocol_id),
+  FOREIGN KEY (tunnel_id) REFERENCES tunnels(id),
+  FOREIGN KEY (protocol_id) REFERENCES protocols(id),
+  FOREIGN KEY (source_id) REFERENCES sources(id)
+);
+
 CREATE TABLE decision_options (
   id TEXT PRIMARY KEY,
   node_id TEXT NOT NULL,
@@ -76,7 +88,7 @@ CREATE TABLE actions (
   instruction_es TEXT NOT NULL,
   criticality TEXT NOT NULL CHECK (criticality IN ('information', 'required', 'critical')),
   source_page INTEGER NOT NULL,
-  printed_page INTEGER NOT NULL,
+  printed_page TEXT NOT NULL,
   FOREIGN KEY (protocol_id) REFERENCES protocols(id)
 );
 
@@ -88,7 +100,7 @@ CREATE TABLE notifications (
   condition_es TEXT NOT NULL DEFAULT '',
   mandatory_state TEXT NOT NULL CHECK (mandatory_state IN ('required', 'conditional', 'source-listed')),
   source_page INTEGER NOT NULL,
-  printed_page INTEGER NOT NULL,
+  printed_page TEXT NOT NULL,
   FOREIGN KEY (protocol_id) REFERENCES protocols(id)
 );
 

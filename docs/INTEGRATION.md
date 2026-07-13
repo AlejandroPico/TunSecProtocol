@@ -1,6 +1,6 @@
 # Integración TunSec ↔ TunSec Protocol
 
-La primera interfaz de integración permite abrir el asistente con el contexto de una incidencia y devolver cambios al programa contenedor. No crea fichas en TunSec todavía: define un contrato estable para la futura fusión.
+La interfaz permite abrir el asistente con el contexto de una incidencia y devolver cambios al programa contenedor. TUNSEC conserva su JSON como registro persistente y el canal del navegador aporta sincronización inmediata en el mismo equipo.
 
 ## Apertura por URL
 
@@ -29,7 +29,7 @@ TunSec puede solicitar una apertura con:
 }
 ```
 
-TunSec Protocol emite `TUNSEC_PROTOCOL_SESSION_STARTED`, `TUNSEC_PROTOCOL_SELECTED` y `TUNSEC_PROTOCOL_ACTION_UPDATED`. El contexto incluye el identificador de sesión, túnel, sentido, código y, en el último evento, los identificadores de acciones confirmadas.
+TunSec Protocol emite `TUNSEC_PROTOCOL_SESSION_STARTED`, `TUNSEC_PROTOCOL_SELECTED`, `TUNSEC_PROTOCOL_ACTION_UPDATED`, `TUNSEC_PROTOCOL_NOTIFICATION_UPDATED` y `TUNSEC_PROTOCOL_SESSION_CLOSED`. El contexto incluye sesión, túnel, sentido, código, confirmaciones y estado de cierre. TUNSEC registra estos cambios en su JSON; nunca cierra una incidencia con recursos presentes.
 
 ## Sesiones locales
 

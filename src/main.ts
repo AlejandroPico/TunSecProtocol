@@ -21,6 +21,7 @@ interface SessionState {
   currentNodeId: string | null;
   branches: Set<string>;
   completedActions: Set<string>;
+  completedNotifications: Set<string>;
   category: string;
   search: string;
   audit: AuditEvent[];
@@ -37,6 +38,7 @@ interface SavedSession {
   currentNodeId: string | null;
   branches: string[];
   completedActions: string[];
+  completedNotifications: string[];
   audit: AuditEvent[];
   startedAt: number;
   updatedAt: number;
@@ -57,6 +59,7 @@ let state: SessionState = {
   currentNodeId: null,
   branches: new Set(),
   completedActions: new Set(),
+  completedNotifications: new Set(),
   category: 'all',
   search: '',
   audit: [],
@@ -107,6 +110,7 @@ function saveLocalSnapshot(): void {
     currentNodeId: state.currentNodeId,
     branches: [...state.branches],
     completedActions: [...state.completedActions],
+    completedNotifications: [...state.completedNotifications],
     audit: state.audit,
     startedAt: state.startedAt,
     updatedAt: Date.now()
@@ -142,8 +146,11 @@ function sessionTabs(): string {
   return `<nav class="session-tabs" aria-label="Incidencias abiertas">${savedSessions.map((session) => {
     const tunnel = tunnels.find((item) => item.id === session.tunnelId);
     const active = session.sessionId === state.sessionId;
-    return `<button class="session-tab ${active ? 'active' : ''}" data-session="${escapeHtml(session.sessionId)}" type="button" title="${escapeHtml(tunnel?.name ?? session.tunnelId)} · ${escapeHtml(session.direction)}">
-      <i></i><span>${escapeHtml(tunnel?.name ?? session.tunnelId)}</span><b>${escapeHtml(session.protocolCode ?? session.direction)}</b></button>`;
+    const severity = session.protocolCode ? Number(session.protocolCode.charAt(0)) : 0;
+    const severityClass = severity >= 1 && severity <= 4 ? `s${severity}` : 'unclassified';
+    return `<span class="session-tab ${severityClass} ${active ? 'active' : ''}" title="${escapeHtml(tunnel?.name ?? session.tunnelId)} · ${escapeHtml(session.direction)}">
+      <button data-session="${escapeHtml(session.sessionId)}" type="button"><i></i><span>${escapeHtml(tunnel?.name ?? session.tunnelId)}</span><b>${escapeHtml(session.protocolCode ?? session.direction)}</b></button>
+      <button class="session-close" data-close-session="${escapeHtml(session.sessionId)}" type="button" aria-label="Cerrar ${escapeHtml(tunnel?.name ?? session.tunnelId)}">×</button></span>`;
   }).join('')}</nav>`;
 }
 
@@ -174,6 +181,9 @@ function renderError(error: unknown): void {
 function tunnelStateLabel(tunnel: TunnelRecord): string {
   if (tunnel.protocolCatalogId === 'glories') return '4 guías';
   if (tunnel.protocolCatalogId === 'b20') return 'Guiado';
+  if (tunnel.protocolCatalogId === 'b10') return '29 códigos';
+  if (tunnel.protocolCatalogId === 'b10-bp-bv') return '23 códigos';
+  if (tunnel.protocolCatalogId === 'camelies' || tunnel.protocolCatalogId === 'lesseps') return '27 códigos';
   return 'Pendiente';
 }
 
@@ -181,6 +191,12 @@ function tunnelCoverage(tunnel: TunnelRecord): { summary: string; source: string
   if (tunnel.protocolCatalogId === 'b20') return {
     summary: '21 códigos catalogados · 250-TRA guiado',
     source: 'PAU túneles Ronda de Dalt B-20 · octubre 2024'
+  };
+  if (tunnel.protocolCatalogId === 'b10-bp-bv') return { summary: '23 códigos catalogados · 250-TRA guiado', source: 'PAU Ronda Litoral B-10 · marzo 2025' };
+  if (tunnel.protocolCatalogId === 'b10') return { summary: '29 códigos catalogados · 250-TRA guiado', source: 'PAU Ronda Litoral B-10 · marzo 2025' };
+  if (tunnel.protocolCatalogId === 'camelies' || tunnel.protocolCatalogId === 'lesseps') return {
+    summary: '27 códigos catalogados · 250-TRA guiado',
+    source: tunnel.protocolCatalogId === 'camelies' ? 'Plan de Emergencia Camèlies' : 'Plan de Emergencia Lesseps'
   };
   return {
     summary: '29 códigos catalogados · 4 recorridos guiados',
@@ -197,25 +213,20 @@ function renderTunnelSelection(): void {
   }, new Map<string, TunnelRecord[]>());
   const groups = [...grouped.entries()].map(([corridor, items]) => `<section class="tunnel-group">
     <div class="section-kicker">${escapeHtml(corridor)}</div>
-    <div class="tunnel-grid">${items.map((tunnel) => `<button class="tunnel-card ${pendingTunnel?.id === tunnel.id ? 'selected' : ''}" data-tunnel="${tunnel.id}" type="button">
-      <span class="tunnel-symbol">${icon(tunnel.id === 'glories' ? 'fire' : 'default')}</span>
-      <span><strong>${escapeHtml(tunnel.name)}</strong><small>${escapeHtml(tunnel.directions.join(' · '))}</small></span>
-      <em class="coverage ${tunnel.digitizationState}">${tunnelStateLabel(tunnel)}</em>
-    </button>`).join('')}</div>
+    <div class="tunnel-grid">${items.map((tunnel) => {
+      const operational = tunnel.digitizationState === 'operational-prototype';
+      return `<article class="tunnel-card ${operational ? 'operational' : 'pending'}">
+        <div class="tunnel-card-title"><span class="tunnel-symbol">${icon(tunnel.id === 'glories' ? 'fire' : 'default')}</span>
+          <span><strong>${escapeHtml(tunnel.name)}</strong><small>${escapeHtml(operational ? tunnelCoverage(tunnel).summary : 'Digitalización pendiente')}</small></span>
+          <em class="coverage ${tunnel.digitizationState}">${tunnelStateLabel(tunnel)}</em></div>
+        <div class="tunnel-directions">${tunnel.directions.map((direction) => `<button class="direction-button" data-start-tunnel="${tunnel.id}" data-direction="${escapeHtml(direction)}" type="button" ${operational ? '' : 'disabled'}><span>${escapeHtml(direction)}</span><b>→</b></button>`).join('')}</div>
+      </article>`;
+    }).join('')}</div>
   </section>`).join('');
 
-  const coverage = pendingTunnel ? tunnelCoverage(pendingTunnel) : null;
-  const choice = pendingTunnel ? `<aside class="selection-panel">
-    <div class="section-kicker">Túnel seleccionado</div><h2>${escapeHtml(pendingTunnel.name)}</h2>
-    ${pendingTunnel.digitizationState === 'operational-prototype' ? `<p>Selecciona el sentido confirmado por cámaras o por el aviso recibido.</p>
-      <div class="direction-grid">${pendingTunnel.directions.map((direction) => `<button class="direction-button" data-direction="${escapeHtml(direction)}" type="button"><span>${escapeHtml(direction)}</span><b>→</b></button>`).join('')}</div>
-      <div class="source-mini"><span>COBERTURA ACTUAL</span><strong>${escapeHtml(coverage?.summary)}</strong><small>${escapeHtml(coverage?.source)}</small></div>`
-      : `<div class="pending-panel"><strong>Digitalización pendiente</strong><p>El documento está en el lote de trabajo, pero todavía no hay instrucciones transcritas y verificadas para este túnel.</p><p class="muted">No se muestran protocolos aproximados de otro túnel.</p></div>`}
-  </aside>` : `<aside class="selection-panel empty-selection"><div>${icon('default')}<h2>Selecciona un túnel</h2><p>Es el dato inicial obligatorio. Las incidencias ya abiertas permanecen accesibles en la barra superior.</p></div></aside>`;
-
   app.innerHTML = `${appHeader()}<main class="selection-layout"><section class="selection-content">
-    <div class="hero-row"><div><span class="eyebrow">PASO 1 DE 2</span><h1>¿En qué túnel está ocurriendo?</h1><p>Selecciona la infraestructura antes de clasificar la incidencia.</p></div><div class="db-status"><i></i><span>SQLite verificada<br><small>solo lectura</small></span></div></div>
-    ${groups}</section>${choice}</main>`;
+    <div class="hero-row"><div><span class="eyebrow">PASO 1 DE 2</span><h1>¿En qué túnel está ocurriendo?</h1><p>Selecciona directamente el sentido dentro de su ficha.</p></div><div class="db-status"><i></i><span>SQLite verificada<br><small>solo lectura</small></span></div></div>
+    ${groups}</section></main>`;
 }
 
 function quickAccess(): string {
@@ -280,9 +291,16 @@ function catalogOnly(bundle: ProtocolBundle): string {
 }
 
 function visibleActions(bundle: ProtocolBundle): ActionRecord[] {
-  const tunnelBranch = `tunnel:${state.tunnel?.id ?? ''}`;
-  const sequenceStarted = state.branches.size > 0;
-  return bundle.actions.filter((action) => state.branches.has(action.branchKey) || (sequenceStarted && action.branchKey === tunnelBranch));
+  return bundle.actions.filter((action) => branchApplies(action.branchKey));
+}
+
+function branchApplies(branchKey: string): boolean {
+  if (!state.branches.size) return false;
+  return branchKey.split('&').every((part) => {
+    if (part.startsWith('tunnel:')) return part === `tunnel:${state.tunnel?.id ?? ''}`;
+    if (part.startsWith('direction:')) return part === `direction:${state.direction}`;
+    return state.branches.has(part);
+  });
 }
 
 function actionChecklist(bundle: ProtocolBundle): string {
@@ -299,22 +317,31 @@ function actionChecklist(bundle: ProtocolBundle): string {
 }
 
 function notificationPanel(bundle: ProtocolBundle): string {
-  const items = bundle.notifications.filter((item) => state.branches.has(item.branchKey));
+  const items = bundle.notifications.filter((item) => branchApplies(item.branchKey));
   if (!items.length) return '';
-  return `<section class="notification-panel"><div class="panel-heading compact"><div><span class="eyebrow">AVISOS</span><h2>Entidades indicadas</h2></div><span>${items.length}</span></div>
-    <div class="notification-grid">${items.map((item) => `<article class="notification-item ${item.mandatoryState}"><strong>${escapeHtml(item.target)}</strong>
+  const completed = items.filter((item) => state.completedNotifications.has(item.id)).length;
+  return `<section class="notification-panel"><div class="panel-heading compact"><div><span class="eyebrow">AVISOS</span><h2>Entidades indicadas</h2></div><span>${completed}/${items.length}</span></div>
+    <div class="notification-grid">${items.map((item) => { const checked = state.completedNotifications.has(item.id); return `<button class="notification-item ${item.mandatoryState} ${checked ? 'done' : ''}" data-notification="${item.id}" type="button" aria-pressed="${checked}"><strong>${checked ? '✓ ' : ''}${escapeHtml(item.target)}</strong>
       <span>${item.mandatoryState === 'required' ? 'REQUERIDO' : item.mandatoryState === 'conditional' ? 'CONDICIONAL' : 'EN FUENTE'}</span>
-      ${item.conditionEs ? `<p>${escapeHtml(item.conditionEs)}</p>` : ''}<small>PDF ${item.sourcePage} · impresa ${item.printedPage}</small></article>`).join('')}</div>
+      ${item.conditionEs ? `<p>${escapeHtml(item.conditionEs)}</p>` : ''}<small>PDF ${item.sourcePage} · referencia ${escapeHtml(item.printedPage)}</small></button>`; }).join('')}</div>
     <p class="call-warning">La aplicación no llama ni notifica automáticamente. El operador debe usar los canales oficiales.</p></section>`;
+}
+
+function completionStatus(bundle: ProtocolBundle): { ready: boolean; pending: number } {
+  const actions = visibleActions(bundle);
+  const notifications = bundle.notifications.filter((item) => branchApplies(item.branchKey));
+  const pending = actions.filter((item) => !state.completedActions.has(item.id)).length + notifications.filter((item) => !state.completedNotifications.has(item.id)).length;
+  return { ready: pending === 0 && actions.length > 0, pending };
 }
 
 function decisionPanel(bundle: ProtocolBundle): string {
   const node = bundle.nodes.find((item) => item.id === state.currentNodeId);
   if (!node) return '';
   const options = bundle.options.filter((option) => option.nodeId === node.id);
+  const completion = completionStatus(bundle);
   return `<section class="decision-panel ${node.nodeType}"><div class="decision-index"><span>${node.nodeType === 'terminal' ? 'FIN' : 'DECISIÓN'}</span><b>PDF ${node.sourcePage}</b></div>
     <h2>${escapeHtml(node.titleEs)}</h2><p>${escapeHtml(node.promptEs)}</p>
-    ${options.length ? `<div class="decision-options">${options.map((option) => `<button data-option="${option.id}" type="button">${escapeHtml(option.labelEs)}<b>→</b></button>`).join('')}</div>` : `<div class="terminal-note">Secuencia completada. Verifica las acciones críticas antes de cerrar la sesión.</div>`}</section>`;
+    ${options.length ? `<div class="decision-options">${options.map((option) => `<button data-option="${option.id}" type="button">${escapeHtml(option.labelEs)}<b>→</b></button>`).join('')}</div>` : `<div class="terminal-note">${completion.ready ? 'Todas las acciones y avisos aplicables están confirmados.' : `Quedan ${completion.pending} confirmaciones pendientes.`}</div><button class="complete-session" data-complete-session type="button" ${completion.ready ? '' : 'disabled'}>CERRAR INCIDENCIA</button>`}</section>`;
 }
 
 function auditPanel(): string {
@@ -349,11 +376,6 @@ function render(): void {
   if (!state.tunnel) renderTunnelSelection(); else renderDashboard();
 }
 
-function chooseTunnel(tunnelId: string): void {
-  pendingTunnel = tunnels.find((tunnel) => tunnel.id === tunnelId) ?? null;
-  renderTunnelSelection();
-}
-
 function startSession(direction: string, launch?: Pick<TunSecLaunchContext, 'sessionId' | 'incidentId'>): void {
   if (!pendingTunnel || pendingTunnel.digitizationState !== 'operational-prototype') return;
   state = {
@@ -367,10 +389,11 @@ function startSession(direction: string, launch?: Pick<TunSecLaunchContext, 'ses
     currentNodeId: null,
     branches: new Set(),
     completedActions: new Set(),
+    completedNotifications: new Set(),
     audit: [],
     startedAt: Date.now()
   };
-  protocols = getProtocols(pendingTunnel.protocolCatalogId);
+  protocols = getProtocols(pendingTunnel.protocolCatalogId, pendingTunnel.id);
   addAudit('session', `Sesión iniciada: ${pendingTunnel.name}, sentido ${direction}.`);
   emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_SESSION_STARTED', context: {
     sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: pendingTunnel.id, direction
@@ -382,9 +405,9 @@ function restoreSession(sessionId: string): void {
   const snapshot = savedSessions.find((item) => item.sessionId === sessionId);
   const tunnel = tunnels.find((item) => item.id === snapshot?.tunnelId);
   if (!snapshot || !tunnel) return;
-  protocols = getProtocols(tunnel.protocolCatalogId);
+  protocols = getProtocols(tunnel.protocolCatalogId, tunnel.id);
   const protocol = snapshot.protocolCode ? protocols.find((item) => item.code === snapshot.protocolCode) ?? null : null;
-  const bundle = protocol ? getProtocolBundle(protocol.id) : null;
+  const bundle = protocol ? getProtocolBundle(protocol.id, tunnel.id) : null;
   state = {
     ...state,
     sessionId: snapshot.sessionId,
@@ -396,6 +419,7 @@ function restoreSession(sessionId: string): void {
     currentNodeId: snapshot.currentNodeId,
     branches: new Set(snapshot.branches),
     completedActions: new Set(snapshot.completedActions),
+    completedNotifications: new Set(snapshot.completedNotifications ?? []),
     audit: snapshot.audit,
     startedAt: snapshot.startedAt,
     category: 'all',
@@ -408,7 +432,7 @@ function restoreSession(sessionId: string): void {
 function openTunnelSelection(): void {
   saveLocalSnapshot();
   state = { ...state, sessionId: '', incidentId: undefined, tunnel: null, direction: '', protocol: null, bundle: null,
-    currentNodeId: null, branches: new Set(), completedActions: new Set(), audit: [], startedAt: Date.now() };
+    currentNodeId: null, branches: new Set(), completedActions: new Set(), completedNotifications: new Set(), audit: [], startedAt: Date.now() };
   pendingTunnel = null;
   protocols = [];
   renderTunnelSelection();
@@ -434,10 +458,11 @@ function openProtocol(protocolId: string): void {
   const protocol = protocols.find((item) => item.id === protocolId);
   if (!protocol) return;
   state.protocol = protocol;
-  state.bundle = getProtocolBundle(protocol.id);
+  state.bundle = getProtocolBundle(protocol.id, state.tunnel?.id);
   state.currentNodeId = state.bundle.nodes.find((node) => node.nodeType === 'start')?.id ?? null;
   state.branches = new Set();
   state.completedActions = new Set();
+  state.completedNotifications = new Set();
   addAudit('navigation', `Protocolo seleccionado: ${protocol.code} · ${protocol.titleEs}.`);
   if (state.tunnel) emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_SELECTED', context: {
     sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: state.tunnel.id,
@@ -475,11 +500,50 @@ function toggleAction(actionId: string): void {
   renderDashboard();
 }
 
+function toggleNotification(notificationId: string): void {
+  const notification = state.bundle?.notifications.find((item) => item.id === notificationId);
+  if (!notification) return;
+  if (state.completedNotifications.has(notificationId)) {
+    state.completedNotifications.delete(notificationId);
+    addAudit('notification', `Confirmación de aviso retirada: ${notification.target}.`);
+  } else {
+    state.completedNotifications.add(notificationId);
+    addAudit('notification', `Aviso confirmado: ${notification.target}.`);
+  }
+  if (state.tunnel) emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_NOTIFICATION_UPDATED', context: {
+    sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: state.tunnel.id,
+    direction: state.direction, protocolCode: state.protocol?.code,
+    completedNotificationIds: [...state.completedNotifications],
+    notificationTargets: state.bundle?.notifications.filter((item) => state.completedNotifications.has(item.id)).map((item) => item.target) ?? []
+  } });
+  renderDashboard();
+}
+
+function closeSession(sessionId: string, completedFlow = false): void {
+  const snapshot = savedSessions.find((item) => item.sessionId === sessionId);
+  if (!snapshot) return;
+  if (!completedFlow && !window.confirm('¿Cerrar esta incidencia y retirarla de las fichas abiertas?')) return;
+  emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_SESSION_CLOSED', context: {
+    sessionId: snapshot.sessionId, incidentId: snapshot.incidentId, tunnelId: snapshot.tunnelId,
+    direction: snapshot.direction, protocolCode: snapshot.protocolCode ?? undefined, status: 'CLOSED'
+  } });
+  savedSessions = savedSessions.filter((item) => item.sessionId !== sessionId);
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(savedSessions));
+  if (state.sessionId !== sessionId) { render(); return; }
+  const next = savedSessions[0];
+  state = { ...state, sessionId: '', incidentId: undefined, tunnel: null, direction: '', protocol: null, bundle: null,
+    currentNodeId: null, branches: new Set(), completedActions: new Set(), completedNotifications: new Set(), audit: [], startedAt: Date.now() };
+  pendingTunnel = null;
+  protocols = [];
+  if (next) restoreSession(next.sessionId); else renderTunnelSelection();
+}
+
 function restartProtocol(): void {
   if (!state.bundle) return;
   state.currentNodeId = state.bundle.nodes.find((node) => node.nodeType === 'start')?.id ?? null;
   state.branches = new Set();
   state.completedActions = new Set();
+  state.completedNotifications = new Set();
   addAudit('navigation', `Recorrido ${state.bundle.protocol.code} reiniciado.`);
   renderDashboard();
 }
@@ -491,7 +555,7 @@ function exportSession(): void {
     note: 'Bitácora auxiliar local; no sustituye el registro oficial.',
     context: { tunnel: state.tunnel?.name, direction: state.direction, protocol: state.protocol?.code },
     source: source ? { title: source.title, edition: source.edition, sha256: source.sha256 } : null,
-    branches: [...state.branches], completedActionIds: [...state.completedActions], events: state.audit
+    branches: [...state.branches], completedActionIds: [...state.completedActions], completedNotificationIds: [...state.completedNotifications], events: state.audit
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const anchor = document.createElement('a');
@@ -502,15 +566,20 @@ function exportSession(): void {
 }
 
 app.addEventListener('click', (event) => {
-  const target = (event.target as HTMLElement).closest<HTMLElement>('[data-tunnel],[data-direction],[data-protocol],[data-option],[data-action],[data-category],[data-session],[data-theme-control],[data-home],[data-change-tunnel],[data-clear-filter],[data-restart],[data-export]');
+  const target = (event.target as HTMLElement).closest<HTMLElement>('[data-start-tunnel],[data-protocol],[data-option],[data-action],[data-notification],[data-category],[data-session],[data-close-session],[data-complete-session],[data-theme-control],[data-home],[data-change-tunnel],[data-clear-filter],[data-restart],[data-export]');
   if (!target) return;
-  if (target.dataset.tunnel) chooseTunnel(target.dataset.tunnel);
-  else if (target.dataset.direction) startSession(target.dataset.direction);
+  if (target.dataset.startTunnel && target.dataset.direction) {
+    pendingTunnel = tunnels.find((item) => item.id === target.dataset.startTunnel) ?? null;
+    startSession(target.dataset.direction);
+  }
   else if (target.dataset.protocol) openProtocol(target.dataset.protocol);
   else if (target.dataset.option) answer(target.dataset.option);
   else if (target.dataset.action) toggleAction(target.dataset.action);
+  else if (target.dataset.notification) toggleNotification(target.dataset.notification);
   else if (target.dataset.category) { state.category = target.dataset.category; renderDashboard(); }
   else if (target.dataset.session) restoreSession(target.dataset.session);
+  else if (target.dataset.closeSession) closeSession(target.dataset.closeSession);
+  else if (target.hasAttribute('data-complete-session')) closeSession(state.sessionId, true);
   else if (target.hasAttribute('data-theme-control')) cycleTheme();
   else if (target.hasAttribute('data-restart')) restartProtocol();
   else if (target.hasAttribute('data-export')) exportSession();

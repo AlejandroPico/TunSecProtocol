@@ -66,7 +66,7 @@ export interface ActionRecord {
   instructionEs: string;
   criticality: 'information' | 'required' | 'critical';
   sourcePage: number;
-  printedPage: number;
+  printedPage: string;
 }
 
 export interface NotificationRecord {
@@ -77,7 +77,7 @@ export interface NotificationRecord {
   conditionEs: string;
   mandatoryState: 'required' | 'conditional' | 'source-listed';
   sourcePage: number;
-  printedPage: number;
+  printedPage: string;
 }
 
 export interface ProtocolBundle {
@@ -92,6 +92,6 @@ export interface ProtocolBundle {
 export interface AuditEvent {
   at: string;
   elapsedSeconds: number;
-  type: 'session' | 'answer' | 'action' | 'navigation';
+  type: 'session' | 'answer' | 'action' | 'notification' | 'navigation';
   message: string;
 }

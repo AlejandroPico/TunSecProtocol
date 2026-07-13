@@ -16,7 +16,7 @@ def main() -> None:
     connection = sqlite3.connect(OUTPUT)
     try:
         connection.execute("PRAGMA foreign_keys = ON")
-        for filename in ("schema.sql", "seed.sql"):
+        for filename in ("schema.sql", "seed.sql", "catalogs_b10_urban.sql"):
             sql = (ROOT / "database" / filename).read_text(encoding="utf-8")
             connection.executescript(sql)
         connection.execute("PRAGMA optimize")
