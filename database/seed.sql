@@ -19,21 +19,35 @@ INSERT INTO sources VALUES
   ('pau-b10-2025-03','PAU Ronda Litoral','PAU-RondaLitoral_març 25_V2 Rev JA.pdf','v2 · març 2025','2025-03-01',884,'940cd61dc4a1dd1c0861c8295667148b5746219184109e8b9a6fb8bbc4cabafe','pending','Documento legible; pendiente de extracción y doble validación.'),
   ('plan-camelies','Plan de Emergencia - Túnel de Camèlies','Plan de Emergencia - Túnel de Camèlies.pdf','Edición no identificada',NULL,186,'927a3a4487b71d3f6769144c229c0512d86dd1d2b505e4c67f80ebd3c301a4e7','pending','Documento legible; pendiente de extracción y doble validación.'),
   ('plan-lesseps','Plan de Emergencia - Túnel de Lesseps','Plan de Emergencia - Túnel de Lesseps.pdf','Edición no identificada',NULL,184,'00aaf1af77c1f51ec65e51f462e2220882c47734d9e6ec6dbac14694e289a487','pending','Documento legible; pendiente de extracción y doble validación.'),
-  ('protocols-b20','Protocols d’actuació Ronda de Dalt','Protocols actuació_Rda Dalt_V1_revAB.pdf','v1 · rev. AB','',207,'c51cb81beb7f458bcce2175a85a3d69a2c1fd636368e46034cf0538104e84e43','pending','Documento legible; pendiente de extracción y doble validación.');
+  ('protocols-b20','Pla d’autoprotecció dels túnels de la Ronda de Dalt B-20','Protocols actuació_Rda Dalt_V1_revAB.pdf','v1 · rev. AB · octubre 2024','2024-10-01',207,'c51cb81beb7f458bcce2175a85a3d69a2c1fd636368e46034cf0538104e84e43','verified','Catálogo completo y recorrido 250-TRA transcritos con variantes por túnel.');
 
 INSERT INTO tunnels VALUES
-  ('glories', 'Glòries', 'Urbans', '["Besòs","Llobregat"]', 'pau-glories-2025-09', 'operational-prototype'),
-  ('badal', 'Badal', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending'),
-  ('maria-cristina', 'Maria Cristina', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending'),
-  ('mitre', 'Mitre', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending'),
-  ('lesseps', 'Lesseps', 'Urbans', '["Ascendent","Descendent"]', 'plan-lesseps', 'pending'),
-  ('camelies', 'Camèlies', 'Urbans', '["Ascendent","Descendent"]', 'plan-camelies', 'pending'),
-  ('rovira', 'Rovira', 'Urbans', '["Ascendent","Descendent"]', 'pau-rovira-2025-07', 'pending'),
-  ('miramar', 'Miramar', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending'),
-  ('bonanova', 'Bonanova', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending'),
-  ('illa', 'Illa', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending'),
-  ('b10', 'Ronda Litoral', 'B-10', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending'),
-  ('b20', 'Ronda de Dalt', 'B-20', '["Besòs","Llobregat"]', 'protocols-b20', 'pending');
+  ('glories', 'Glòries', 'Urbans', '["Besòs","Llobregat"]', 'pau-glories-2025-09', 'operational-prototype', 'glories', 1),
+  ('b20', 'Catálogo compartido B-20', 'B-20', '["Besòs","Llobregat"]', 'protocols-b20', 'catalogued', 'b20', 0),
+  ('b10', 'Catálogo compartido B-10', 'B-10', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 0),
+  ('b20-pedralbes', 'Pedralbes', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-oreneta', 'Oreneta', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-jorda', 'Jordà', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-rambla-cacadors', 'Rambla Caçadors', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-guineueta', 'Guineueta', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-via-julia', 'Via Júlia', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b20-palamos', 'Palamós', 'B-20 · Ronda de Dalt', '["Besòs","Llobregat"]', 'protocols-b20', 'operational-prototype', 'b20', 1),
+  ('b10-baro-viver', 'Baró de Viver', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-bon-pastor', 'Bon Pastor', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-diagonal-mar', 'Diagonal Mar', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-poble-nou', 'Poble Nou', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-vila-olimpica', 'Vila Olímpica', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-pla-palau', 'Pla de Palau', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('b10-colom', 'Colom', 'B-10 · Ronda Litoral', '["Besòs","Llobregat"]', 'pau-b10-2025-03', 'pending', 'b10', 1),
+  ('badal', 'Badal', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending', 'badal', 1),
+  ('maria-cristina', 'Maria Cristina', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending', 'maria-cristina', 1),
+  ('mitre', 'Mitre', 'Urbans', '["Ascendent","Descendent"]', 'pau-badal-mc-mitre-2023-07', 'pending', 'mitre', 1),
+  ('lesseps', 'Lesseps', 'Urbans', '["Ascendent","Descendent"]', 'plan-lesseps', 'pending', 'lesseps', 1),
+  ('camelies', 'Camèlies', 'Urbans', '["Ascendent","Descendent"]', 'plan-camelies', 'pending', 'camelies', 1),
+  ('rovira', 'Rovira', 'Urbans', '["Ascendent","Descendent"]', 'pau-rovira-2025-07', 'pending', 'rovira', 1),
+  ('miramar', 'Miramar', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending', 'miramar', 1),
+  ('bonanova', 'Bonanova', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending', 'bonanova', 1),
+  ('illa', 'Illa', 'Urbans', '["Ascendent","Descendent"]', NULL, 'pending', 'illa', 1);
 
 INSERT INTO protocols VALUES
   ('glories-100-tra','glories','100-TRA','Circulació de vehicles especials amb autorització','Circulación de vehículos especiales con autorización',1,'traffic','vehicle-special','','catalog-only','pau-glories-2025-09','183-185','285-287'),
@@ -66,6 +80,29 @@ INSERT INTO protocols VALUES
   ('glories-390-ili','glories','390-ILI','Sabotatge o atemptat','Sabotaje o atentado',3,'security','security','','catalog-only','pau-glories-2025-09','307-309','324-326'),
   ('glories-400-foc','glories','400-FOC','Incendi o explosió','Incendio o explosión',4,'fire','fire','Incendios o explosiones no relacionados con atentados ni mercancías peligrosas, dentro del túnel, galerías, instalaciones o zona de influencia.','guided','pau-glories-2025-09','310-312','327-329');
 
+INSERT INTO protocols VALUES
+  ('b20-100-tra','b20','100-TRA','Circulació de vehicles especials amb autorització','Circulación de vehículos especiales con autorización',1,'traffic','vehicle-special','','catalog-only','protocols-b20','3-11','2-10'),
+  ('b20-101-tra','b20','101-TRA','Circulació de vehicles amb mercaderies perilloses','Circulación de vehículos con mercancías peligrosas',1,'hazmat','hazmat','','catalog-only','protocols-b20','12-21','11-20'),
+  ('b20-110-amb','b20','110-AMB','Fenòmens meteorològics adversos','Fenómenos meteorológicos adversos',1,'environment','weather','','catalog-only','protocols-b20','22-28','21-27'),
+  ('b20-120-amb','b20','120-AMB','Alta concentració de CO o alt nivell d’opacitat','Alta concentración de CO o alto nivel de opacidad',1,'environment','air','','catalog-only','protocols-b20','29-35','28-34'),
+  ('b20-130-tra','b20','130-TRA','Presència de personal treballant','Presencia de personal trabajando',1,'operations','workers','','catalog-only','protocols-b20','36-47','35-46'),
+  ('b20-140-tra','b20','140-TRA','Circulació molt lenta','Circulación muy lenta',1,'traffic','congestion','','catalog-only','protocols-b20','48-56','47-55'),
+  ('b20-160-ava','b20','160-AVA','Avaria en sistemes o danys estructurals lleus','Avería en sistemas o daños estructurales leves',1,'systems','systems','','catalog-only','protocols-b20','57-61','56-60'),
+  ('b20-200-tra','b20','200-TRA','Vessament de líquids','Vertido de líquidos',2,'hazmat','spill','','catalog-only','protocols-b20','62-71','61-70'),
+  ('b20-220-amb','b20','220-AMB','Alta concentració de CO/OP','Alta concentración de CO/OP',2,'environment','air','','catalog-only','protocols-b20','72-79','71-78'),
+  ('b20-230-tra','b20','230-TRA','Presència de vianants i vehicles no autoritzats','Presencia de peatones y vehículos no autorizados',2,'people','pedestrian','','catalog-only','protocols-b20','80-89','79-88'),
+  ('b20-240-tra','b20','240-TRA','Presència d’animal gran solt o vianant errant','Presencia de animal grande suelto o peatón errante',2,'people','animal','','catalog-only','protocols-b20','90-100','89-99'),
+  ('b20-250-tra','b20','250-TRA','Vehicle detingut obstaculitzant un carril','Vehículo detenido obstaculizando un carril',2,'traffic','vehicle-stopped','Vehículo detenido que obstaculiza un carril, tanto a cielo abierto como dentro de un túnel o en su zona de influencia.','guided','protocols-b20','101-111','100-110'),
+  ('b20-260-ava','b20','260-AVA','Funcionament degradat de sistemes (nivell mitjà)','Funcionamiento degradado de sistemas (nivel medio)',2,'systems','systems','','catalog-only','protocols-b20','112-118','111-117'),
+  ('b20-270-tra','b20','270-TRA','Accident sense presència de vehicles pesants','Accidente sin presencia de vehículos pesados',2,'traffic','collision','','catalog-only','protocols-b20','119-128','118-127'),
+  ('b20-280-tra','b20','280-TRA','Conducció en sentit contrari o temerària','Conducción en sentido contrario o temeraria',2,'traffic','wrong-way','','catalog-only','protocols-b20','129-139','128-138'),
+  ('b20-330-ili','b20','330-ILI','Manifestacions o desordre públic','Manifestaciones o desorden público',3,'security','public-order','','catalog-only','protocols-b20','140-153','139-152'),
+  ('b20-360-ava','b20','360-AVA','Avaria crítica, danys estructurals greus o grans filtracions','Avería crítica, daños estructurales graves o grandes filtraciones',3,'systems','structural','El código figura en el listado oficial, pero esta copia no contiene una ficha 1.1 específica.','catalog-only','protocols-b20','2','1'),
+  ('b20-370-tra','b20','370-TRA','Accident amb presència de vehicles pesants','Accidente con presencia de vehículos pesados',3,'traffic','heavy-collision','','catalog-only','protocols-b20','154-166','153-165'),
+  ('b20-380-tra','b20','380-TRA','Accident amb implicació de substàncies perilloses','Accidente con implicación de sustancias peligrosas',3,'hazmat','hazmat','','catalog-only','protocols-b20','167-180','166-179'),
+  ('b20-390-ili','b20','390-ILI','Sabotatge o atemptat','Sabotaje o atentado',3,'security','security','','catalog-only','protocols-b20','181-193','180-192'),
+  ('b20-400-foc','b20','400-FOC','Incendi, explosió o pèrdua sobtada de visibilitat','Incendio, explosión o pérdida súbita de visibilidad',4,'fire','fire','','catalog-only','protocols-b20','194-207','193-206');
+
 INSERT INTO decision_nodes VALUES
   ('200-start','glories-200-tra','start','Inicio','Ejecuta las acciones iniciales y determina la peligrosidad del vertido.',211),
   ('200-danger','glories-200-tra','question','Peligrosidad','¿El vertido ha sido determinado como peligroso?',211),
@@ -84,6 +121,11 @@ INSERT INTO decision_nodes VALUES
   ('400-spread','glories-400-foc','question','Evolución','¿Existe evolución del incidente o riesgo hacia el interior del túnel?',311),
   ('400-cleared','glories-400-foc','question','Seguimiento','¿El Cap d’Emergència confirma el fin del incidente?',311),
   ('400-end','glories-400-foc','terminal','Fin de la situación de riesgo','Restablecer condiciones normales y desactivar el PAU en emergencia cuando corresponda.',311);
+
+INSERT INTO decision_nodes VALUES
+  ('b20-250-start','b20-250-tra','start','Inicio','Verifica el vehículo, aplica el corte de carril y activa los avisos indicados.',102),
+  ('b20-250-cleared','b20-250-tra','question','Seguimiento','¿El vehículo ha sido retirado y ha finalizado la situación de riesgo?',102),
+  ('b20-250-end','b20-250-tra','terminal','Fin del incidente','Restablecer las condiciones anteriores de explotación y redactar el comunicado del incidente.',103);
 
 INSERT INTO decision_options VALUES
   ('200-start-next','200-start','Comenzar','start','200-danger','base',1),
@@ -108,6 +150,11 @@ INSERT INTO decision_options VALUES
   ('400-spread-no','400-spread','No','no','400-cleared','no-spread',2),
   ('400-cleared-yes','400-cleared','Sí, fin confirmado','yes','400-end','resolved',1),
   ('400-cleared-no','400-cleared','No, continuar seguimiento','no','400-cleared','monitoring',2);
+
+INSERT INTO decision_options VALUES
+  ('b20-250-start-next','b20-250-start','Comenzar','start','b20-250-cleared','base|active',1),
+  ('b20-250-cleared-yes','b20-250-cleared','Sí, vehículo retirado','yes','b20-250-end','resolved',1),
+  ('b20-250-cleared-no','b20-250-cleared','No, mantener supervisión','no','b20-250-cleared','monitoring',2);
 
 INSERT INTO actions VALUES
   ('200-a01','glories-200-tra','base','Verificación',10,'cctv','Visualizar la cámara más próxima al incidente.', 'critical',211,313),
@@ -154,6 +201,17 @@ INSERT INTO actions VALUES
   ('400-a11','glories-400-foc','active','Evacuación',90,'evacuation','Seguir la evacuación mediante CCTV; cambiar la pauta de ventilación solo cuando no haya personas retenidas y así lo determine el Cap d’Emergència.', 'critical',311,328),
   ('400-a12','glories-400-foc','resolved','Restablecimiento',100,'restore','Restituir las condiciones normales de explotación y desactivar el PAU en emergencia cuando corresponda.', 'critical',312,329);
 
+INSERT INTO actions VALUES
+  ('b20-250-a01','b20-250-tra','base','Verificación',10,'cctv','Enclavar la cámara CTTV más próxima y cubrir la zona afectada para identificar la afección.', 'critical',103,102),
+  ('b20-250-a02','b20-250-tra','base','Carril',20,'lane','Una vez confirmada la presencia, lanzar los PMV con el corte de carril y apoyo de Guàrdia Urbana.', 'critical',103,102),
+  ('b20-250-a03','b20-250-tra','tunnel:b20-oreneta','Señalización',30,'signalling','Situar en amarillo los semáforos de Oreneta.', 'required',106,105),
+  ('b20-250-a04','b20-250-tra','tunnel:b20-jorda','Iluminación',30,'lighting','Si la iluminación está a medio flujo, subirla a nivel completo; no es necesario activar manualmente el refuerzo de bocas.', 'required',108,107),
+  ('b20-250-a05','b20-250-tra','tunnel:b20-jorda','Señalización',40,'signalling','Situar en amarillo el semáforo de Jordà.', 'required',108,107),
+  ('b20-250-a06','b20-250-tra','tunnel:b20-guineueta','Iluminación',30,'lighting','Si la iluminación está a medio flujo, subirla a nivel completo; no es necesario activar manualmente el refuerzo de bocas.', 'required',111,110),
+  ('b20-250-a07','b20-250-tra','active','Seguimiento',50,'monitor','Supervisar continuamente mediante CTTV y permanecer preparado para registrar otro incidente derivado.', 'required',103,102),
+  ('b20-250-a08','b20-250-tra','active','Remolcado',60,'closure','Atender la decisión del Cap d’Emergència si ordena cerrar el tubo durante las tareas de remolcado, con apoyo de Guàrdia Urbana.', 'critical',103,102),
+  ('b20-250-a09','b20-250-tra','resolved','Restablecimiento',70,'restore','Restablecer las condiciones de explotación anteriores y redactar el comunicado del incidente.', 'critical',103,102);
+
 INSERT INTO notifications VALUES
   ('200-n01','glories-200-tra','base','Equipo de conservación','Aviso inicial para determinar la peligrosidad.','required',211,313),
   ('200-n02','glories-200-tra','dangerous','Bombers y 112','Obligatorio en caso de vertido peligroso.','required',212,314),
@@ -181,5 +239,11 @@ INSERT INTO notifications VALUES
   ('400-n05','glories-400-foc','base','CECAT y 112','','required',312,329),
   ('400-n06','glories-400-foc','base','Cap de Servei d’Operadors','','source-listed',312,329),
   ('400-n07','glories-400-foc','base','Centre de Gestió de la Mobilitat','','source-listed',312,329);
+
+INSERT INTO notifications VALUES
+  ('b20-250-n01','b20-250-tra','base','Sala Conjunta de Comandament - 112','Para informar a Guàrdia Urbana y atender al conductor, señalizar el corte y regular el tráfico.','required',103,102),
+  ('b20-250-n02','b20-250-tra','base','Centre de Gestió de la Mobilitat','Informar del corte de carril y de las posibles afectaciones al tráfico.','required',103,102),
+  ('b20-250-n03','b20-250-tra','base','Equipo de mantenimiento','Por si es necesario limpiar la calzada o apoyar la retirada.','source-listed',103,102),
+  ('b20-250-n04','b20-250-tra','base','CECAT','Para activar planes de orden superior si corresponde.','conditional',103,102);
 
 COMMIT;

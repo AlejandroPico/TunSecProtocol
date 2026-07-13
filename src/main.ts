@@ -1,6 +1,7 @@
 import './styles.css';
 import { getProtocolBundle, getProtocols, getTunnels, openDatabase } from './database';
 import { icon } from './icons';
+import { emitBridgeEvent, listenForLaunch, parseLaunchContext, type TunSecLaunchContext } from './integration';
 import type { ActionRecord, AuditEvent, ProtocolBundle, ProtocolRecord, TunnelRecord } from './types';
 
 const appElement = document.querySelector<HTMLDivElement>('#app');
@@ -11,6 +12,8 @@ const themes = ['day', 'dusk', 'night'] as const;
 type Theme = (typeof themes)[number];
 
 interface SessionState {
+  sessionId: string;
+  incidentId?: string;
   tunnel: TunnelRecord | null;
   direction: string;
   protocol: ProtocolRecord | null;
@@ -25,10 +28,28 @@ interface SessionState {
   theme: Theme;
 }
 
+interface SavedSession {
+  sessionId: string;
+  incidentId?: string;
+  tunnelId: string;
+  direction: string;
+  protocolCode: string | null;
+  currentNodeId: string | null;
+  branches: string[];
+  completedActions: string[];
+  audit: AuditEvent[];
+  startedAt: number;
+  updatedAt: number;
+}
+
+const SESSION_STORAGE_KEY = 'tunsec-active-sessions-v1';
+
 let tunnels: TunnelRecord[] = [];
 let protocols: ProtocolRecord[] = [];
 let pendingTunnel: TunnelRecord | null = null;
+let savedSessions: SavedSession[] = [];
 let state: SessionState = {
+  sessionId: '',
   tunnel: null,
   direction: '',
   protocol: null,
@@ -76,17 +97,32 @@ function addAudit(type: AuditEvent['type'], message: string): void {
 }
 
 function saveLocalSnapshot(): void {
-  const snapshot = {
-    tunnel: state.tunnel?.id ?? null,
+  if (!state.tunnel || !state.sessionId) return;
+  const snapshot: SavedSession = {
+    sessionId: state.sessionId,
+    incidentId: state.incidentId,
+    tunnelId: state.tunnel.id,
     direction: state.direction,
-    protocol: state.protocol?.code ?? null,
+    protocolCode: state.protocol?.code ?? null,
     currentNodeId: state.currentNodeId,
     branches: [...state.branches],
     completedActions: [...state.completedActions],
     audit: state.audit,
-    startedAt: state.startedAt
+    startedAt: state.startedAt,
+    updatedAt: Date.now()
   };
-  localStorage.setItem('tunsec-active-session', JSON.stringify(snapshot));
+  savedSessions = [snapshot, ...savedSessions.filter((item) => item.sessionId !== snapshot.sessionId)]
+    .sort((left, right) => right.updatedAt - left.updatedAt).slice(0, 8);
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(savedSessions));
+}
+
+function loadSavedSessions(): void {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) ?? '[]') as SavedSession[];
+    savedSessions = Array.isArray(parsed) ? parsed.filter((item) => item.sessionId && item.tunnelId && item.direction).slice(0, 8) : [];
+  } catch {
+    savedSessions = [];
+  }
 }
 
 function setTheme(theme: Theme): void {
@@ -101,24 +137,28 @@ function cycleTheme(): void {
   render();
 }
 
+function sessionTabs(): string {
+  if (!savedSessions.length) return '';
+  return `<nav class="session-tabs" aria-label="Incidencias abiertas">${savedSessions.map((session) => {
+    const tunnel = tunnels.find((item) => item.id === session.tunnelId);
+    const active = session.sessionId === state.sessionId;
+    return `<button class="session-tab ${active ? 'active' : ''}" data-session="${escapeHtml(session.sessionId)}" type="button" title="${escapeHtml(tunnel?.name ?? session.tunnelId)} · ${escapeHtml(session.direction)}">
+      <i></i><span>${escapeHtml(tunnel?.name ?? session.tunnelId)}</span><b>${escapeHtml(session.protocolCode ?? session.direction)}</b></button>`;
+  }).join('')}</nav>`;
+}
+
 function appHeader(): string {
   return `<header class="app-header">
     <button class="brand" data-home type="button" aria-label="Volver a selección de túnel">
       <span class="brand-mark">TS</span><span><strong>TUNSEC PROTOCOL</strong><small>ASISTENTE PAU · BARCELONA</small></span>
     </button>
-    <div class="header-center"><span class="prototype-badge">PROTOTIPO · NO HOMOLOGADO</span></div>
+    <div class="header-center">${sessionTabs()}</div>
     <div class="header-tools">
       ${state.tunnel ? `<span class="session-clock"><i></i><span id="elapsedClock">${elapsedText()}</span></span>` : ''}
-      <button class="square-button" data-theme type="button" title="Cambiar tema visual">${state.theme === 'day' ? '☀' : state.theme === 'dusk' ? '◐' : '☾'}</button>
+      ${state.tunnel ? '<button class="change-tunnel" data-change-tunnel type="button">NUEVA / CAMBIAR</button>' : ''}
+      <button class="square-button" data-theme-control type="button" title="Cambiar tema visual">${state.theme === 'day' ? '☀' : state.theme === 'dusk' ? '◐' : '☾'}</button>
     </div>
   </header>`;
-}
-
-function safetyBar(): string {
-  return `<aside class="safety-bar" role="note">
-    <strong>APOYO A LA DECISIÓN</strong>
-    <span>Contrastar siempre con el PAU vigente y las instrucciones del Cap d’Emergència. Las llamadas no se realizan desde esta aplicación.</span>
-  </aside>`;
 }
 
 function renderLoading(): void {
@@ -132,7 +172,20 @@ function renderError(error: unknown): void {
 }
 
 function tunnelStateLabel(tunnel: TunnelRecord): string {
-  return tunnel.digitizationState === 'operational-prototype' ? '4 guías trazadas' : 'Pendiente';
+  if (tunnel.protocolCatalogId === 'glories') return '4 guías';
+  if (tunnel.protocolCatalogId === 'b20') return 'Guiado';
+  return 'Pendiente';
+}
+
+function tunnelCoverage(tunnel: TunnelRecord): { summary: string; source: string } {
+  if (tunnel.protocolCatalogId === 'b20') return {
+    summary: '21 códigos catalogados · 250-TRA guiado',
+    source: 'PAU túneles Ronda de Dalt B-20 · octubre 2024'
+  };
+  return {
+    summary: '29 códigos catalogados · 4 recorridos guiados',
+    source: 'PAU Glòries · septiembre 2025'
+  };
 }
 
 function renderTunnelSelection(): void {
@@ -151,26 +204,31 @@ function renderTunnelSelection(): void {
     </button>`).join('')}</div>
   </section>`).join('');
 
+  const coverage = pendingTunnel ? tunnelCoverage(pendingTunnel) : null;
   const choice = pendingTunnel ? `<aside class="selection-panel">
     <div class="section-kicker">Túnel seleccionado</div><h2>${escapeHtml(pendingTunnel.name)}</h2>
     ${pendingTunnel.digitizationState === 'operational-prototype' ? `<p>Selecciona el sentido confirmado por cámaras o por el aviso recibido.</p>
       <div class="direction-grid">${pendingTunnel.directions.map((direction) => `<button class="direction-button" data-direction="${escapeHtml(direction)}" type="button"><span>${escapeHtml(direction)}</span><b>→</b></button>`).join('')}</div>
-      <div class="source-mini"><span>COBERTURA ACTUAL</span><strong>Catálogo completo · 4 recorridos guiados</strong><small>PAU Glòries · septiembre 2025</small></div>`
+      <div class="source-mini"><span>COBERTURA ACTUAL</span><strong>${escapeHtml(coverage?.summary)}</strong><small>${escapeHtml(coverage?.source)}</small></div>`
       : `<div class="pending-panel"><strong>Digitalización pendiente</strong><p>El documento está en el lote de trabajo, pero todavía no hay instrucciones transcritas y verificadas para este túnel.</p><p class="muted">No se muestran protocolos aproximados de otro túnel.</p></div>`}
-  </aside>` : `<aside class="selection-panel empty-selection"><div>${icon('default')}<h2>Selecciona un túnel</h2><p>Es el dato inicial obligatorio. El sistema no lo deduce ni lo reutiliza de una sesión anterior.</p></div></aside>`;
+  </aside>` : `<aside class="selection-panel empty-selection"><div>${icon('default')}<h2>Selecciona un túnel</h2><p>Es el dato inicial obligatorio. Las incidencias ya abiertas permanecen accesibles en la barra superior.</p></div></aside>`;
 
-  app.innerHTML = `${appHeader()}${safetyBar()}<main class="selection-layout"><section class="selection-content">
+  app.innerHTML = `${appHeader()}<main class="selection-layout"><section class="selection-content">
     <div class="hero-row"><div><span class="eyebrow">PASO 1 DE 2</span><h1>¿En qué túnel está ocurriendo?</h1><p>Selecciona la infraestructura antes de clasificar la incidencia.</p></div><div class="db-status"><i></i><span>SQLite verificada<br><small>solo lectura</small></span></div></div>
     ${groups}</section>${choice}</main>`;
 }
 
 function quickAccess(): string {
-  const quick = [
-    { id: 'glories-400-foc', icon: 'fire', label: 'Incendio / explosión', tone: 'red' },
-    { id: 'glories-200-tra', icon: 'spill', label: 'Vertido', tone: 'amber' },
-    { id: 'glories-250-tra', icon: 'vehicle-stopped', label: 'Vehículo detenido', tone: 'yellow' },
-    { id: 'glories-240-tra', icon: 'animal', label: 'Animal / peatón', tone: 'yellow' }
+  const definitions = [
+    { code: '400-FOC', icon: 'fire', label: 'Incendio / explosión', tone: 'red' },
+    { code: '200-TRA', icon: 'spill', label: 'Vertido', tone: 'amber' },
+    { code: '250-TRA', icon: 'vehicle-stopped', label: 'Vehículo detenido', tone: 'yellow' },
+    { code: '240-TRA', icon: 'animal', label: 'Animal / peatón', tone: 'yellow' }
   ];
+  const quick = definitions.flatMap((item) => {
+    const protocol = protocols.find((candidate) => candidate.code === item.code);
+    return protocol ? [{ ...item, id: protocol.id }] : [];
+  });
   return `<div class="quick-grid">${quick.map((item) => `<button class="quick-card ${item.tone}" data-protocol="${item.id}" type="button">
     ${icon(item.icon)}<span>${item.label}</span><b>ABRIR</b></button>`).join('')}</div>`;
 }
@@ -222,7 +280,9 @@ function catalogOnly(bundle: ProtocolBundle): string {
 }
 
 function visibleActions(bundle: ProtocolBundle): ActionRecord[] {
-  return bundle.actions.filter((action) => state.branches.has(action.branchKey));
+  const tunnelBranch = `tunnel:${state.tunnel?.id ?? ''}`;
+  const sequenceStarted = state.branches.size > 0;
+  return bundle.actions.filter((action) => state.branches.has(action.branchKey) || (sequenceStarted && action.branchKey === tunnelBranch));
 }
 
 function actionChecklist(bundle: ProtocolBundle): string {
@@ -277,10 +337,8 @@ function renderWorkspace(): string {
 }
 
 function renderDashboard(): void {
-  app.innerHTML = `${appHeader()}${safetyBar()}<main class="dashboard">
-    <section class="dashboard-top"><div><span class="eyebrow">${escapeHtml(state.tunnel?.corridor)} · SENTIDO ${escapeHtml(state.direction)}</span><h1>${escapeHtml(state.tunnel?.name)}</h1></div>
-      <button class="change-tunnel" data-change-tunnel type="button">CAMBIAR TÚNEL</button></section>
-    <section class="quick-section"><div class="section-kicker">Acceso crítico · un clic</div>${quickAccess()}</section>
+  app.innerHTML = `${appHeader()}<main class="dashboard">
+    <section class="quick-section">${quickAccess()}</section>
     <section class="protocol-shell"><aside class="catalog-sidebar"><div class="catalog-head"><div><span class="eyebrow">CATÁLOGO PAU</span><h2>Clasificar incidencia</h2></div><span>${protocols.length}</span></div>
       <label class="search-box"><span>⌕</span><input id="protocolSearch" type="search" value="${escapeHtml(state.search)}" placeholder="Código o situación…" autocomplete="off"></label>
       ${categoryFilters()}${protocolList()}</aside><div class="workspace">${renderWorkspace()}</div></section></main>`;
@@ -296,10 +354,12 @@ function chooseTunnel(tunnelId: string): void {
   renderTunnelSelection();
 }
 
-function startSession(direction: string): void {
+function startSession(direction: string, launch?: Pick<TunSecLaunchContext, 'sessionId' | 'incidentId'>): void {
   if (!pendingTunnel || pendingTunnel.digitizationState !== 'operational-prototype') return;
   state = {
     ...state,
+    sessionId: launch?.sessionId || crypto.randomUUID(),
+    incidentId: launch?.incidentId,
     tunnel: pendingTunnel,
     direction,
     protocol: null,
@@ -310,9 +370,64 @@ function startSession(direction: string): void {
     audit: [],
     startedAt: Date.now()
   };
-  protocols = getProtocols(pendingTunnel.id);
+  protocols = getProtocols(pendingTunnel.protocolCatalogId);
   addAudit('session', `Sesión iniciada: ${pendingTunnel.name}, sentido ${direction}.`);
+  emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_SESSION_STARTED', context: {
+    sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: pendingTunnel.id, direction
+  } });
   renderDashboard();
+}
+
+function restoreSession(sessionId: string): void {
+  const snapshot = savedSessions.find((item) => item.sessionId === sessionId);
+  const tunnel = tunnels.find((item) => item.id === snapshot?.tunnelId);
+  if (!snapshot || !tunnel) return;
+  protocols = getProtocols(tunnel.protocolCatalogId);
+  const protocol = snapshot.protocolCode ? protocols.find((item) => item.code === snapshot.protocolCode) ?? null : null;
+  const bundle = protocol ? getProtocolBundle(protocol.id) : null;
+  state = {
+    ...state,
+    sessionId: snapshot.sessionId,
+    incidentId: snapshot.incidentId,
+    tunnel,
+    direction: snapshot.direction,
+    protocol,
+    bundle,
+    currentNodeId: snapshot.currentNodeId,
+    branches: new Set(snapshot.branches),
+    completedActions: new Set(snapshot.completedActions),
+    audit: snapshot.audit,
+    startedAt: snapshot.startedAt,
+    category: 'all',
+    search: ''
+  };
+  pendingTunnel = tunnel;
+  renderDashboard();
+}
+
+function openTunnelSelection(): void {
+  saveLocalSnapshot();
+  state = { ...state, sessionId: '', incidentId: undefined, tunnel: null, direction: '', protocol: null, bundle: null,
+    currentNodeId: null, branches: new Set(), completedActions: new Set(), audit: [], startedAt: Date.now() };
+  pendingTunnel = null;
+  protocols = [];
+  renderTunnelSelection();
+}
+
+function applyLaunchContext(context: TunSecLaunchContext): void {
+  const tunnel = tunnels.find((item) => item.id === context.tunnelId);
+  if (!tunnel || tunnel.digitizationState !== 'operational-prototype') return;
+  pendingTunnel = tunnel;
+  const direction = context.direction && tunnel.directions.includes(context.direction) ? context.direction : null;
+  if (!direction) {
+    renderTunnelSelection();
+    return;
+  }
+  startSession(direction, context);
+  if (context.protocolCode) {
+    const protocol = protocols.find((item) => item.code === context.protocolCode);
+    if (protocol) openProtocol(protocol.id);
+  }
 }
 
 function openProtocol(protocolId: string): void {
@@ -324,6 +439,10 @@ function openProtocol(protocolId: string): void {
   state.branches = new Set();
   state.completedActions = new Set();
   addAudit('navigation', `Protocolo seleccionado: ${protocol.code} · ${protocol.titleEs}.`);
+  if (state.tunnel) emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_SELECTED', context: {
+    sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: state.tunnel.id,
+    direction: state.direction, protocolCode: protocol.code
+  } });
   renderDashboard();
 }
 
@@ -349,6 +468,10 @@ function toggleAction(actionId: string): void {
     state.completedActions.add(actionId);
     addAudit('action', `Acción confirmada: ${action.instructionEs}`);
   }
+  if (state.tunnel) emitBridgeEvent({ type: 'TUNSEC_PROTOCOL_ACTION_UPDATED', context: {
+    sessionId: state.sessionId, incidentId: state.incidentId, tunnelId: state.tunnel.id,
+    direction: state.direction, protocolCode: state.protocol?.code, completedActionIds: [...state.completedActions]
+  } });
   renderDashboard();
 }
 
@@ -365,7 +488,7 @@ function exportSession(): void {
   const source = state.bundle?.source;
   const payload = {
     format: 'TunSecProtocolSession', schemaVersion: 1, exportedAt: new Date().toISOString(),
-    disclaimer: 'Prototipo no homologado. Bitácora auxiliar; no sustituye el registro oficial.',
+    note: 'Bitácora auxiliar local; no sustituye el registro oficial.',
     context: { tunnel: state.tunnel?.name, direction: state.direction, protocol: state.protocol?.code },
     source: source ? { title: source.title, edition: source.edition, sha256: source.sha256 } : null,
     branches: [...state.branches], completedActionIds: [...state.completedActions], events: state.audit
@@ -379,7 +502,7 @@ function exportSession(): void {
 }
 
 app.addEventListener('click', (event) => {
-  const target = (event.target as HTMLElement).closest<HTMLElement>('[data-tunnel],[data-direction],[data-protocol],[data-option],[data-action],[data-category],[data-theme],[data-home],[data-change-tunnel],[data-clear-filter],[data-restart],[data-export]');
+  const target = (event.target as HTMLElement).closest<HTMLElement>('[data-tunnel],[data-direction],[data-protocol],[data-option],[data-action],[data-category],[data-session],[data-theme-control],[data-home],[data-change-tunnel],[data-clear-filter],[data-restart],[data-export]');
   if (!target) return;
   if (target.dataset.tunnel) chooseTunnel(target.dataset.tunnel);
   else if (target.dataset.direction) startSession(target.dataset.direction);
@@ -387,15 +510,12 @@ app.addEventListener('click', (event) => {
   else if (target.dataset.option) answer(target.dataset.option);
   else if (target.dataset.action) toggleAction(target.dataset.action);
   else if (target.dataset.category) { state.category = target.dataset.category; renderDashboard(); }
-  else if (target.hasAttribute('data-theme')) cycleTheme();
+  else if (target.dataset.session) restoreSession(target.dataset.session);
+  else if (target.hasAttribute('data-theme-control')) cycleTheme();
   else if (target.hasAttribute('data-restart')) restartProtocol();
   else if (target.hasAttribute('data-export')) exportSession();
   else if (target.hasAttribute('data-clear-filter')) { state.category = 'all'; state.search = ''; renderDashboard(); }
-  else if (target.hasAttribute('data-home') || target.hasAttribute('data-change-tunnel')) {
-    if (state.tunnel) addAudit('navigation', 'Sesión abandonada desde la interfaz.');
-    state.tunnel = null; state.direction = ''; state.protocol = null; state.bundle = null; pendingTunnel = null;
-    renderTunnelSelection();
-  }
+  else if (target.hasAttribute('data-home') || target.hasAttribute('data-change-tunnel')) openTunnelSelection();
 });
 
 app.addEventListener('input', (event) => {
@@ -421,7 +541,10 @@ async function boot(): Promise<void> {
   try {
     await openDatabase();
     tunnels = getTunnels();
-    renderTunnelSelection();
+    loadSavedSessions();
+    const launch = parseLaunchContext();
+    if (launch) applyLaunchContext(launch); else renderTunnelSelection();
+    listenForLaunch(applyLaunchContext);
   } catch (error) {
     renderError(error);
   }

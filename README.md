@@ -1,6 +1,6 @@
 # TunSec Protocol
 
-Asistente de consulta rápida para los Planes de Autoprotección (PAU) de los túneles viarios de Barcelona. La primera entrega digitaliza el catálogo del PAU de Glòries y ofrece recorridos operativos trazables para 200-TRA, 240-TRA, 250-TRA y 400-FOC.
+Asistente de consulta rápida para los Planes de Autoprotección (PAU) de los túneles viarios de Barcelona. La aplicación contiene los 29 códigos de Glòries, los 21 códigos de la B-20 y cinco recorridos operativos trazables: 200-TRA, 240-TRA, 250-TRA y 400-FOC de Glòries, además de 250-TRA de la B-20.
 
 > **Estado:** prototipo técnico pendiente de validación y homologación por responsables operativos. No sustituye el PAU vigente, las órdenes del Cap d'Emergència ni las de los servicios de emergencia.
 
@@ -10,7 +10,8 @@ Asistente de consulta rápida para los Planes de Autoprotección (PAU) de los t�
 - Cada acción muestra documento, versión y páginas de procedencia.
 - Los protocolos no transcritos se muestran como catálogo, sin completar instrucciones por inferencia.
 - La base SQLite se distribuye en modo de solo lectura dentro de GitHub Pages.
-- La sesión genera una bitácora local exportable; no envía datos a servidores.
+- Varias incidencias pueden permanecer abiertas y recuperarse desde la barra superior.
+- Cada sesión genera una bitácora local exportable; no envía datos a servidores.
 - Las acciones críticas requieren confirmación explícita del operador.
 
 ## Tecnología
@@ -36,10 +37,16 @@ npm run check
 npm run build
 ```
 
-## Fuente inicial
+## Fuentes transcritas
 
-`PAU GLORIES.pdf`, edición septiembre de 2025, 361 páginas. SHA-256:
+- `PAU GLORIES.pdf`, edición septiembre de 2025, 361 páginas. SHA-256:
 
-`4f5089d521e9536c4183b81623e5a383b94f0e8b2e4570237ea9575987c2c12c`
+  `4f5089d521e9536c4183b81623e5a383b94f0e8b2e4570237ea9575987c2c12c`
+
+- `Protocols actuació_Rda Dalt_V1_revAB.pdf`, edición octubre de 2024, 207 páginas. SHA-256:
+
+  `c51cb81beb7f458bcce2175a85a3d69a2c1fd636368e46034cf0538104e84e43`
 
 La numeración física del PDF y la impresa en el documento se guardan por separado para evitar ambigüedades.
+
+La interfaz de integración con TunSec se documenta en [`docs/INTEGRATION.md`](docs/INTEGRATION.md).

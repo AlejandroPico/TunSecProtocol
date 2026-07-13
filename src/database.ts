@@ -72,18 +72,20 @@ export async function openDatabase(): Promise<void> {
 }
 
 export function getTunnels(): TunnelRecord[] {
-  return rows('SELECT * FROM tunnels ORDER BY corridor, name').map((row) => ({
+  return rows('SELECT * FROM tunnels WHERE is_selectable = 1 ORDER BY corridor, name').map((row) => ({
     id: text(row.id),
     name: text(row.name),
     corridor: text(row.corridor),
     directions: JSON.parse(text(row.directions_json)) as string[],
     sourceId: row.source_id === null ? null : text(row.source_id),
-    digitizationState: text(row.digitization_state) as TunnelRecord['digitizationState']
+    digitizationState: text(row.digitization_state) as TunnelRecord['digitizationState'],
+    protocolCatalogId: text(row.protocol_catalog_id),
+    isSelectable: number(row.is_selectable) === 1
   }));
 }
 
-export function getProtocols(tunnelId: string): ProtocolRecord[] {
-  return rows('SELECT * FROM protocols WHERE tunnel_id = ? ORDER BY severity, code', [tunnelId]).map(mapProtocol);
+export function getProtocols(protocolCatalogId: string): ProtocolRecord[] {
+  return rows('SELECT * FROM protocols WHERE tunnel_id = ? ORDER BY severity, code', [protocolCatalogId]).map(mapProtocol);
 }
 
 export function getSource(sourceId: string): SourceRecord {

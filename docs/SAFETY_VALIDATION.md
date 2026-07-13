@@ -35,8 +35,9 @@ Ningún protocolo pasa de `catalog-only` a `guided` sin estas cuatro evidencias:
 
 ## Limitaciones intencionadas de esta entrega
 
-- Solo Glòries tiene recorridos guiados.
-- Solo están guiados 200-TRA, 240-TRA, 250-TRA y 400-FOC.
+- Glòries tiene guiados 200-TRA, 240-TRA, 250-TRA y 400-FOC.
+- La B-20 tiene sus 21 códigos catalogados y 250-TRA guiado, con variantes por túnel únicamente donde constan en la fuente.
+- La B-10 se muestra mediante fichas individuales, pero permanece bloqueada hasta transcribir y validar sus protocolos.
 - No se realizan llamadas, notificaciones, maniobras SCADA ni acciones sobre señalización.
 - La bitácora local no sustituye el registro oficial de incidencias.
 - Los teléfonos y datos personales de los PDF no se publican en GitHub Pages.

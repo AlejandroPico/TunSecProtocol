@@ -17,6 +17,8 @@ export interface TunnelRecord {
   directions: string[];
   sourceId: string | null;
   digitizationState: 'operational-prototype' | 'catalogued' | 'pending';
+  protocolCatalogId: string;
+  isSelectable: boolean;
 }
 
 export interface ProtocolRecord {

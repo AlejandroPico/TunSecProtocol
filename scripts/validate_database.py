@@ -64,8 +64,19 @@ def validate_protocol_graph(connection: sqlite3.Connection, protocol_id: str) ->
         row[0]
         for row in connection.execute("SELECT DISTINCT branch_key FROM actions WHERE protocol_id = ?", (protocol_id,))
     }
-    assert action_branches <= reachable_branches, (
-        f"{protocol_id}: actions use unreachable branches {action_branches - reachable_branches}"
+    tunnel_branches = {branch for branch in action_branches if branch.startswith("tunnel:")}
+    for branch in tunnel_branches:
+        tunnel_id = branch.removeprefix("tunnel:")
+        matches = scalar(
+            connection,
+            """SELECT count(*) FROM tunnels t JOIN protocols p ON p.id = ?
+               WHERE t.id = ? AND t.is_selectable = 1 AND t.protocol_catalog_id = p.tunnel_id""",
+            (protocol_id, tunnel_id),
+        )
+        assert matches == 1, f"{protocol_id}: invalid tunnel-specific branch {branch}"
+    ordinary_branches = action_branches - tunnel_branches
+    assert ordinary_branches <= reachable_branches, (
+        f"{protocol_id}: actions use unreachable branches {ordinary_branches - reachable_branches}"
     )
 
 
@@ -76,9 +87,14 @@ def main() -> None:
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert list(connection.execute("PRAGMA foreign_key_check")) == []
         assert scalar(connection, "SELECT count(*) FROM protocols WHERE tunnel_id='glories'") == 29
-        assert scalar(connection, "SELECT count(*) FROM protocols WHERE implementation_state='guided'") == 4
+        assert scalar(connection, "SELECT count(*) FROM protocols WHERE tunnel_id='b20'") == 21
+        assert scalar(connection, "SELECT count(*) FROM protocols") == 50
+        assert scalar(connection, "SELECT count(*) FROM protocols WHERE implementation_state='guided'") == 5
+        assert scalar(connection, "SELECT count(*) FROM tunnels WHERE is_selectable=1 AND protocol_catalog_id='b20'") == 7
+        assert scalar(connection, "SELECT count(*) FROM tunnels WHERE is_selectable=1 AND protocol_catalog_id='b10'") == 7
+        assert scalar(connection, "SELECT count(*) FROM tunnels WHERE id IN ('b10','b20') AND is_selectable=0") == 2
         assert scalar(connection, "SELECT count(*) FROM sources") == 8
-        assert scalar(connection, "SELECT count(*) FROM sources WHERE validation_state='verified'") == 1
+        assert scalar(connection, "SELECT count(*) FROM sources WHERE validation_state='verified'") == 2
         assert scalar(connection, "SELECT count(*) FROM sources WHERE validation_state='unreadable'") == 1
 
         guided = connection.execute(
@@ -94,7 +110,7 @@ def main() -> None:
         assert missing_citations == 0, "Actions without page citations"
     finally:
         connection.close()
-    print("Validated SQLite: 8 sources, 29 protocols, 4 guided graphs, references and foreign keys OK.")
+    print("Validated SQLite: 8 sources, 50 protocols, 5 guided graphs, shared catalogs, references and foreign keys OK.")
 
 
 if __name__ == "__main__":

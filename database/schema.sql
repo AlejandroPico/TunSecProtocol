@@ -19,7 +19,10 @@ CREATE TABLE tunnels (
   directions_json TEXT NOT NULL,
   source_id TEXT,
   digitization_state TEXT NOT NULL CHECK (digitization_state IN ('operational-prototype', 'catalogued', 'pending')),
-  FOREIGN KEY (source_id) REFERENCES sources(id)
+  protocol_catalog_id TEXT NOT NULL,
+  is_selectable INTEGER NOT NULL DEFAULT 1 CHECK (is_selectable IN (0, 1)),
+  FOREIGN KEY (source_id) REFERENCES sources(id),
+  FOREIGN KEY (protocol_catalog_id) REFERENCES tunnels(id)
 );
 
 CREATE TABLE protocols (
