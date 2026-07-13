@@ -1,0 +1,27 @@
+{
+  "name": "tunsec-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "npm@11.18.0",
+  "scripts": {
+    "prepare:assets": "python3 scripts/build_database.py && python3 scripts/validate_database.py && node scripts/copy_sqlite_wasm.mjs",
+    "predev": "npm run prepare:assets",
+    "dev": "vite",
+    "check": "tsc --noEmit",
+    "prebuild": "npm run prepare:assets",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "sql.js": "1.14.1"
+  },
+  "devDependencies": {
+    "@types/sql.js": "1.4.11",
+    "typescript": "7.0.2",
+    "vite": "8.1.4"
+  }
+}
